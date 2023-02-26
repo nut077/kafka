@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: local
+---
+spring:
+  profiles:
+    active: local
+  kafka:
+    producer:
+      bootstrap-servers: localhost:29092,localhost:39092
+      key-serializer: org.apache.kafka.common.serialization.LongSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    admin:
+      properties:
+        bootstrap-servers: localhost:29092,localhost:39092
+    bootstrap-servers: localhost:29092,localhost:39092
+    template:
+      default-topic: library-events
