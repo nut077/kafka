@@ -20,7 +20,7 @@ public class LibraryEventProducer {
   private final ObjectMapper objectMapper;
 
   public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
-    Long key = libraryEvent.getId();
+    Long key = libraryEvent.id();
     String value = objectMapper.writeValueAsString(libraryEvent);
     CompletableFuture<SendResult<Long, String>> sendResultCompletableFuture = kafkaTemplate.sendDefault(key, value);
     sendResultCompletableFuture.whenComplete((result, throwable) -> {
