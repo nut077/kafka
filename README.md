@@ -1,308 +1,306 @@
-# Setting Up Kafka 3.0.0
+![kafka-for-developers-using-spring-boot](https://github.com/dilipsundarraj1/kafka-for-developers-using-spring-boot/workflows/kafka-for-developers-using-spring-boot/badge.svg)
+# kafka-for-developers-using-spring-boot
 
-<details><summary>Mac</summary>
-<p>
+This repository has the complete code related to kafka producers/consumers using spring boot.
 
-- Make sure you are navigated inside the bin directory.
+## Kafka SetUp
+- [Setup-Kafka-Using-Docker](SetUpKafkaDocker.md)
 
-## Start Zookeeper and Kafka Broker
+## Securing your Kafka Cluster using SSL
 
--   Start up the Zookeeper.
+- [Kafka SSL SetUp](https://github.com/dilipsundarraj1/kafka-cluster-ssl)
 
-```
-./zookeeper-server-start.sh ../config/zookeeper.properties
-```
+## H2 Database
 
-- Add the below properties in the server.properties
+- Access the h2 database in the following link - http://localhost:8081/h2-console
 
-```
-listeners=PLAINTEXT://localhost:9092
-auto.create.topics.enable=false
-```
 
--   Start up the Kafka Broker
+# Set Up Kafka in Local using Docker
 
-```
-./kafka-server-start.sh ../config/server.properties
-```
+## Set up broker and zookeeper
 
-## How to create a topic ?
+- Navigate to the path where the **docker-compose.yml** is located and then run the below command.
 
 ```
-./kafka-topics.sh --create --topic test-topic --replication-factor 1 --partitions 4 --bootstrap-server localhost:9092
+docker-compose up
 ```
 
-## How to instantiate a Console Producer?
+## Producer and Consume the Messages
 
-### Without Key
+- Let's going to the container by running the below command.
 
 ```
-./kafka-console-producer.sh --broker-list localhost:9092 --topic test-topic
+docker exec -it kafka1 bash
 ```
 
-### With Key
+- Create a Kafka topic using the **kafka-topics** command.
+    - **kafka1:19092** refers to the **KAFKA_ADVERTISED_LISTENERS** in the docker-compose.yml file.
 
 ```
-./kafka-console-producer.sh --broker-list localhost:9092 --topic test-topic --property "key.separator=-" --property "parse.key=true"
+kafka-topics --bootstrap-server kafka1:19092 \
+             --create \
+             --topic test-topic \
+             --replication-factor 1 --partitions 1
 ```
 
-## How to instantiate a Console Consumer?
+- Produce Messages to the topic.
 
-### Without Key
-
 ```
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test-topic --from-beginning
+docker exec --interactive --tty kafka1  \
+kafka-console-producer --bootstrap-server kafka1:19092 \
+                       --topic test-topic
 ```
 
-### With Key
+- Consume Messages from the topic.
 
 ```
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test-topic --from-beginning -property "key.separator= - " --property "print.key=true"
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server kafka1:19092 \
+                       --topic test-topic \
+                       --from-beginning
 ```
-
-### With Consumer Group
 
-```
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test-topic --group <group-name>
-```
+## Producer and Consume the Messages With Key and Value
 
-### Consume messages With Kafka Headers
+- Produce Messages with Key and Value to the topic.
 
 ```
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic library-events.DLT --from-beginning --property print.headers=true --property print.timestamp=true
+docker exec --interactive --tty kafka1  \
+kafka-console-producer --bootstrap-server kafka1:19092 \
+                       --topic test-topic \
+                       --property "key.separator=-" --property "parse.key=true"
 ```
-
-</p>
 
-</details>
+- Consuming messages with Key and Value from a topic.
 
-<details><summary>Windows</summary>
-<p>
-
-- Make sure you are inside the **bin/windows** directory.
-
-## Start Zookeeper and Kafka Broker
-
--   Start up the Zookeeper.
-
 ```
-zookeeper-server-start.bat ..\..\config\zookeeper.properties
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server kafka1:19092 \
+                       --topic test-topic \
+                       --from-beginning \
+                       --property "key.separator= - " --property "print.key=true"
 ```
+
+### Consume Messages using Consumer Groups
 
--   Start up the Kafka Broker.
 
 ```
-kafka-server-start.bat ..\..\config\server.properties
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server kafka1:19092 \
+                       --topic test-topic --group console-consumer-41911\
+                       --property "key.separator= - " --property "print.key=true"
 ```
 
-## How to create a topic ?
+- Example Messages:
 
 ```
-kafka-topics.bat --create --topic test-topic  --replication-factor 1 --partitions 4 --bootstrap-server localhost:9092
+a-abc
+b-bus
 ```
 
-## How to instantiate a Console Producer?
+### Consume Messages With Headers
 
-### Without Key
-
 ```
-kafka-console-producer.bat --broker-list localhost:9092 --topic test-topic
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server kafka1:19092 \
+                       --topic library-events.DLT \
+                       --property "print.headers=true" --property "print.timestamp=true" 
 ```
 
-### With Key
+- Example Messages:
 
 ```
-kafka-console-producer.bat --broker-list localhost:9092 --topic test-topic --property "key.separator=-" --property "parse.key=true"
+a-abc
+b-bus
 ```
 
-## How to instantiate a Console Consumer?
+### Set up a Kafka Cluster with 3 brokers
 
-### Without Key
+- Run this command and this will spin up a kafka cluster with 3 brokers.
 
 ```
-kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test-topic --from-beginning
+docker-compose -f docker-compose-multi-broker.yml up
 ```
 
-### With Key
+- Create topic with the replication factor as 3
 
 ```
-kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test-topic --from-beginning -property "key.separator= - " --property "print.key=true"
+docker exec --interactive --tty kafka1  \
+kafka-topics --bootstrap-server kafka1:19092 \
+             --create \
+             --topic test-topic \
+             --replication-factor 3 --partitions 3
 ```
 
-### With Consumer Group
+- Produce Messages to the topic.
 
 ```
-kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test-topic --group <group-name>
+docker exec --interactive --tty kafka1  \
+kafka-console-producer --bootstrap-server localhost:9092,kafka2:19093,kafka3:19094 \
+                       --topic test-topic
 ```
 
-### Consume messages With Kafka Headers
+- Consume Messages from the topic.
 
 ```
-kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic library-events.DLT --from-beginning --property print.headers=true --property print.timestamp=true
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server localhost:9092,kafka2:19093,kafka3:19094 \
+                       --topic test-topic \
+                       --from-beginning
 ```
-
-</p>
-
-</details>
+#### Log files in Multi Kafka Cluster
 
-## Setting Up Multiple Kafka Brokers
+- Log files will be created for each partition in each of the broker instance of the Kafka cluster.
+-  Login to the container **kafka1**.
+  ```
+  docker exec -it kafka1 bash
+  ```
+-  Login to the container **kafka2**.
+  ```
+  docker exec -it kafka2 bash
+  ```
 
-- The first step is to add a new **server.properties**.
+- Shutdown the kafka cluster
 
-- We need to modify three properties to start up a multi broker set up.
-
 ```
-broker.id=<unique-broker-d>
-listeners=PLAINTEXT://localhost:<unique-port>
-log.dirs=/tmp/<unique-kafka-folder>
-auto.create.topics.enable=false
+docker-compose -f docker-compose-multi-broker.yml down
 ```
 
-- Example config will be like below.
+### Setting up min.insync.replica
 
+- Topic - test-topic
+
 ```
-broker.id=1
-listeners=PLAINTEXT://localhost:9093
-log.dirs=/tmp/kafka-logs-1
-auto.create.topics.enable=false
+docker exec --interactive --tty kafka1  \
+kafka-configs  --bootstrap-server localhost:9092 --entity-type topics --entity-name test-topic \
+--alter --add-config min.insync.replicas=2
 ```
-
-### Starting up the new Broker
 
-- Provide the new **server.properties** thats added.
+- Topic - library-events
 
 ```
-./kafka-server-start.sh ../config/server-1.properties
+docker exec --interactive --tty kafka1  \
+kafka-configs  --bootstrap-server localhost:9092 --entity-type topics --entity-name library-events \
+--alter --add-config min.insync.replicas=2
 ```
+## Advanced Kafka Commands
 
+### List the topics in a cluster
+
 ```
-./kafka-server-start.sh ../config/server-2.properties
+docker exec --interactive --tty kafka1  \
+kafka-topics --bootstrap-server kafka1:19092 --list
 ```
-
-# Advanced Kafka CLI operations:
 
-<details><summary>Mac</summary>
-<p>
+### Describe topic
 
-## List the topics in a cluster
+- Command to describe all the Kafka topics.
 
 ```
-./kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker exec --interactive --tty kafka1  \
+kafka-topics --bootstrap-server kafka1:19092 --describe
 ```
 
-## Describe topic
+- Command to describe a specific Kafka topic.
 
-- The below command can be used to describe all the topics.
-
 ```
-./kafka-topics.sh --bootstrap-server localhost:9092 --describe
+docker exec --interactive --tty kafka1  \
+kafka-topics --bootstrap-server kafka1:19092 --describe \
+--topic test-topic
 ```
 
-- The below command can be used to describe a specific topic.
+### Alter topic Partitions
 
 ```
-./kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic <topic-name>
+docker exec --interactive --tty kafka1  \
+kafka-topics --bootstrap-server kafka1:19092 \
+--alter --topic test-topic --partitions 40
 ```
 
-## Alter the min insync replica
-```
-./kafka-configs.sh  --bootstrap-server localhost:9092 --entity-type topics --entity-name library-events --alter --add-config min.insync.replicas=2
-```
+### How to view consumer groups
 
-## Alter the partitions of a topic
 ```
-./kafka-topics.sh --bootstrap-server localhost:9092 --alter --topic test-topic --partitions 40
+docker exec --interactive --tty kafka1  \
+kafka-consumer-groups --bootstrap-server kafka1:19092 --list
 ```
 
-## Delete a topic
+#### Consumer Groups and their Offset
 
 ```
-./kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic test-topic
+docker exec --interactive --tty kafka1  \
+kafka-consumer-groups --bootstrap-server kafka1:19092 \
+--describe --group console-consumer-41911
 ```
-## How to view consumer groups
 
-```
-./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
-```
+## Log file and related config
 
-### Consumer Groups and their Offset
+- Log into the container.
 
 ```
-./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group console-consumer-27773
+docker exec -it kafka1 bash
 ```
 
-## Viewing the Commit Log
+- The config file is present in the below path.
 
 ```
-./kafka-run-class.sh kafka.tools.DumpLogSegments --deep-iteration --files /tmp/kafka-logs/test-topic-0/00000000000000000000.log
+/etc/kafka/server.properties
 ```
 
-## Setting the Minimum Insync Replica
+- The log file is present in the below path.
 
 ```
-./kafka-configs.sh --alter --bootstrap-server localhost:9092 --entity-type topics --entity-name test-topic --add-config min.insync.replicas=2
+/var/lib/kafka/data/
 ```
-</p>
-</details>
-
 
-<details><summary>Windows</summary>
-<p>
+### How to view the commit log?
 
-- Make sure you are inside the **bin/windows** directory.
-
-## List the topics in a cluster
-
 ```
-kafka-topics.bat --bootstrap-server localhost:9092 --list
+docker exec --interactive --tty kafka1  \
+kafka-run-class kafka.tools.DumpLogSegments \
+--deep-iteration \
+--files /var/lib/kafka/data/test-topic-0/00000000000000000000.log
 ```
-
-## Describe topic
 
-- The below command can be used to describe all the topics.
+# kafka-cluster-ssl
 
-```
-kafka-topics.bat --bootstrap-server localhost:9092 --describe
-```
+This repo has the repo for the kafka-cluster-ssl.
 
-- The below command can be used to describe a specific topic.
-
-```
-kafka-topics.bat --bootstrap-server localhost:9092 --describe --topic <topic-name>
-```
+## Generate the required certs for setting up the ssl secured cluster
 
-## Alter the min insync replica
-```
-kafka-configs.bat --bootstrap-server localhost:9092 --entity-type topics --entity-name library-events --alter --add-config min.insync.replicas=2
-```
-## Alter the partitions of a topic
-```
-kafka-configs.bat --bootstrap-server localhost:9092 --alter --topic test-topic --partitions 40
-```
+- Navigate to the **secrets** directory.
 
-## Delete a topic
+- Run the below command.
 
+```script
+sh create-certs.sh
 ```
-kafka-topics.bat --bootstrap-server localhost:9092 --delete --topic <topic-name>
-```
 
+## Produce/Consumer Messages in a SSL Secured Environment
 
-## How to view consumer groups
+- Produce Messages to the topic.
 
 ```
-kafka-consumer-groups.bat --bootstrap-server localhost:9092 --list
+docker exec --interactive --tty kafka1  \
+kafka-console-producer --bootstrap-server localhost:9092 \
+                       --topic test-topic \
+                       --producer.config /etc/kafka/properties/producer.properties
 ```
 
-### Consumer Groups and their Offset
+- Produce Messages to the topic.
 
 ```
-kafka-consumer-groups.bat --bootstrap-server localhost:9092 --describe --group console-consumer-27773
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server localhost:9092 \
+                       --topic test-topic \
+                       --from-beginning \
+                       --consumer.config /etc/kafka/properties/consumer.properties
 ```
 
-## Viewing the Commit Log
 
-```
-kafka-run-class.bat kafka.tools.DumpLogSegments --deep-iteration --files /tmp/kafka-logs/test-topic-0/00000000000000000000.log
+```agsl
+docker exec --interactive --tty kafka1  \
+kafka-console-consumer --bootstrap-server localhost:9092 \
+                       --topic library-events \
+                       --from-beginning \
+                       --consumer.config /etc/kafka/properties/consumer.properties
 ```
-</p>
-</details>
