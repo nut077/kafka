@@ -16,3 +16,6 @@ spring:
     bootstrap-servers: localhost:29092,localhost:39092
     template:
       default-topic: library-events
+  docker:
+    compose:
+      file: docker-compose-multi-broker.yml
